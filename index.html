@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guess the Number</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #1a1040 0%, #2d1b6e 40%, #1a3a6e 100%);
+  }
+
+  .game-wrap {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 2rem 1.75rem;
+    width: 100%;
+    max-width: 460px;
+    color: #fff;
+  }
+
+  .title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 0.25rem; }
+  .title-text { font-size: 1.35rem; font-weight: 600; color: #fff; }
+  .sub-text { font-size: 0.85rem; color: rgba(255,255,255,0.55); margin-bottom: 1.5rem; margin-top: 0.25rem; }
+
+  .stats-row { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .stat-card {
+    flex: 1;
+    border-radius: 12px;
+    padding: 0.75rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .stat-card:nth-child(1) { background: rgba(83,74,183,0.35); }
+  .stat-card:nth-child(2) { background: rgba(29,158,117,0.3); }
+  .stat-card:nth-child(3) { background: rgba(216,90,48,0.3); }
+  .stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-val { font-size: 1.5rem; font-weight: 700; color: #fff; }
+
+  .range-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: rgba(255,255,255,0.55); margin-bottom: 0.4rem; }
+
+  .hint-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.12);
+    margin-bottom: 0.3rem;
+    position: relative;
+    overflow: visible;
+  }
+  .hint-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease, margin-left 0.4s ease, background 0.4s ease;
+    background: linear-gradient(90deg, #7F77DD, #1D9E75);
+  }
+  .marker {
+    position: absolute;
+    top: -7px;
+    width: 3px;
+    height: 22px;
+    background: #fff;
+    border-radius: 2px;
+    transition: left 0.3s ease;
+    display: none;
+    box-shadow: 0 0 6px rgba(255,255,255,0.6);
+  }
+
+  .tick-marks { display: flex; justify-content: space-between; padding: 0 1px; margin-bottom: 1.25rem; }
+  .tick { font-size: 0.7rem; color: rgba(255,255,255,0.35); }
+
+  .guess-input {
+    width: 100%;
+    font-size: 2.2rem;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.75rem;
+    border: 2px solid rgba(127,119,221,0.5);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .guess-input:focus {
+    border-color: #7F77DD;
+    box-shadow: 0 0 0 4px rgba(127,119,221,0.25);
+  }
+  .guess-input::placeholder { color: rgba(255,255,255,0.25); }
+  .guess-input::-webkit-inner-spin-button,
+  .guess-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .btn-guess {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #7F77DD, #534AB7);
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+  .btn-guess:hover { opacity: 0.88; }
+  .btn-guess:active { transform: scale(0.98); }
+  .btn-guess:disabled {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.35);
+    cursor: not-allowed;
+  }
+
+  .feedback-box {
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+    margin-top: 1rem;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    transition: background 0.3s;
+  }
+  .feedback-icon { font-size: 1.6rem; }
+  .feedback-msg { font-size: 1rem; font-weight: 600; }
+  .feedback-sub { font-size: 0.8rem; opacity: 0.75; }
+
+  .history-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    padding: 7px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+  }
+  .badge { font-size: 0.7rem; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+  .badge-high { background: rgba(216,90,48,0.25); color: #F0997B; border: 1px solid rgba(216,90,48,0.4); }
+  .badge-low  { background: rgba(55,138,221,0.25); color: #85B7EB; border: 1px solid rgba(55,138,221,0.4); }
+  .badge-win  { background: rgba(29,158,117,0.25); color: #5DCAA5; border: 1px solid rgba(29,158,117,0.4); }
+
+  .btn-new {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.65rem;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-new:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+  .divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 1rem 0; }
+</style>
+</head>
+<body>
+
+<div class="game-wrap">
+  <div class="title-row">
+    <i class="ti ti-bulb" style="font-size:24px;color:#a89ef5"></i>
+    <span class="title-text">Guess the Number</span>
+  </div>
+  <p class="sub-text">I'm thinking of a number between 1 and 100. Can you find it?</p>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">attempts</div>
+      <div class="stat-val" id="attempt-count">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">range left</div>
+      <div class="stat-val" id="range-size">100</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">best game</div>
+      <div class="stat-val" id="best-score">—</div>
+    </div>
+  </div>
+
+  <div class="range-label">
+    <span id="lo-label">1</span>
+    <span>current range</span>
+    <span id="hi-label">100</span>
+  </div>
+  <div class="hint-bar">
+    <div class="hint-fill" id="hint-fill" style="width:100%"></div>
+    <div class="marker" id="marker"></div>
+  </div>
+  <div class="tick-marks">
+    <span class="tick">1</span>
+    <span class="tick">25</span>
+    <span class="tick">50</span>
+    <span class="tick">75</span>
+    <span class="tick">100</span>
+  </div>
+
+  <input type="number" id="guess-input" class="guess-input" min="1" max="100" placeholder="?">
+  <button class="btn-guess" id="guess-btn" onclick="submitGuess()">
+    <i class="ti ti-arrow-right"></i> Submit Guess
+  </button>
+
+  <div class="feedback-box" id="feedback-box">
+    <span class="feedback-msg" style="color:rgba(255,255,255,0.5)">Make your first guess!</span>
+  </div>
+
+  <hr class="divider">
+  <ul class="history-list" id="history"></ul>
+
+  <button class="btn-new" onclick="newGame()">
+    <i class="ti ti-refresh"></i> New Game
+  </button>
+</div>
+
+<script>
+  let secret, lo, hi, attempts, bestScore, won;
+
+  function newGame() {
+    secret = Math.floor(Math.random() * 100) + 1;
+    lo = 1; hi = 100; attempts = 0; won = false;
+    document.getElementById('guess-input').value = '';
+    document.getElementById('guess-input').disabled = false;
+    document.getElementById('guess-btn').disabled = false;
+    document.getElementById('attempt-count').textContent = '0';
+    document.getElementById('range-size').textContent = '100';
+    document.getElementById('history').innerHTML = '';
+    document.getElementById('lo-label').textContent = '1';
+    document.getElementById('hi-label').textContent = '100';
+    document.getElementById('marker').style.display = 'none';
+    document.getElementById('hint-fill').style.width = '100%';
+    document.getElementById('hint-fill').style.marginLeft = '0%';
+    setFeedback({ icon: 'ti-bulb', msg: 'Make your first guess!', sub: '', bg: 'rgba(255,255,255,0.06)', col: 'rgba(255,255,255,0.5)' });
+  }
+
+  function updateBar(loVal, hiVal, guess) {
+    const fill = document.getElementById('hint-fill');
+    const marker = document.getElementById('marker');
+    const pct = Math.round(((hiVal - loVal) / 99) * 100);
+    const startPct = Math.round(((loVal - 1) / 99) * 100);
+    fill.style.width = pct + '%';
+    fill.style.marginLeft = startPct + '%';
+    if (guess !== null) {
+      marker.style.left = Math.round(((guess - 1) / 99) * 100) + '%';
+      marker.style.display = 'block';
+    }
+  }
+
+  function setFeedback({ icon, msg, sub, bg, col }) {
+    const box = document.getElementById('feedback-box');
+    box.style.background = bg;
+    box.innerHTML = `<i class="ti ${icon} feedback-icon" style="color:${col}"></i><span class="feedback-msg" style="color:${col}">${msg}</span>${sub ? `<span class="feedback-sub" style="color:${col}">${sub}</span>` : ''}`;
+  }
+
+  function addHistory(num, result) {
+    const list = document.getElementById('history');
+    const li = document.createElement('li');
+    li.className = 'history-item';
+    const badgeClass = result === 'high' ? 'badge-high' : result === 'low' ? 'badge-low' : 'badge-win';
+    const badgeText = result === 'high' ? 'too high' : result === 'low' ? 'too low' : 'correct!';
+    li.innerHTML = `<span style="font-weight:600;min-width:28px">${num}</span><span class="badge ${badgeClass}">${badgeText}</span>`;
+    list.prepend(li);
+  }
+
+  function submitGuess() {
+    if (won) return;
+    const input = document.getElementById('guess-input');
+    const n = parseInt(input.value);
+    if (!n || n < 1 || n > 100) {
+      setFeedback({ icon: 'ti-alert-circle', msg: 'Enter a number between 1 and 100', sub: '', bg: 'rgba(186,117,23,0.2)', col: '#FAC775' });
+      return;
+    }
+    attempts++;
+    document.getElementById('attempt-count').textContent = attempts;
+    input.value = '';
+
+    if (n > secret) {
+      hi = Math.min(hi, n - 1);
+      document.getElementById('range-size').textContent = hi - lo + 1;
+      document.getElementById('lo-label').textContent = lo;
+      document.getElementById('hi-label').textContent = hi;
+      updateBar(lo, hi, n);
+      addHistory(n, 'high');
+      setFeedback({ icon: 'ti-arrow-up', msg: `${n} is too high`, sub: `Try between ${lo} and ${hi}`, bg: 'rgba(216,90,48,0.2)', col: '#F0997B' });
+    } else if (n < secret) {
+      lo = Math.max(lo, n + 1);
+      document.getElementById('range-size').textContent = hi - lo + 1;
+      document.getElementById('lo-label').textContent = lo;
+      document.getElementById('hi-label').textContent = hi;
+      updateBar(lo, hi, n);
+      addHistory(n, 'low');
+      setFeedback({ icon: 'ti-arrow-down', msg: `${n} is too low`, sub: `Try between ${lo} and ${hi}`, bg: 'rgba(55,138,221,0.2)', col: '#85B7EB' });
+    } else {
+      won = true;
+      document.getElementById('range-size').textContent = '—';
+      document.getElementById('marker').style.left = Math.round(((n - 1) / 99) * 100) + '%';
+      document.getElementById('guess-input').disabled = true;
+      document.getElementById('guess-btn').disabled = true;
+      addHistory(n, 'win');
+      if (!bestScore || attempts < bestScore) {
+        bestScore = attempts;
+        document.getElementById('best-score').textContent = attempts;
+      }
+      const rating = attempts <= 5 ? '🎯 Amazing!' : attempts <= 7 ? 'Nice work!' : 'You got it!';
+      setFeedback({ icon: 'ti-trophy', msg: `${rating} The number was ${n}`, sub: `Found in ${attempts} attempt${attempts !== 1 ? 's' : ''}`, bg: 'rgba(29,158,117,0.2)', col: '#5DCAA5' });
+    }
+    input.focus();
+  }
+
+  document.getElementById('guess-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitGuess();
+  });
+
+  newGame();
+</script>
+
+</body>
+</html>
